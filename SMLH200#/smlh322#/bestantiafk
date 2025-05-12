@@ -1,0 +1,227 @@
+-- السكربت من صنع فارس
+
+--[[ 
+    Roblox Anti-AFK Script (Modified GUI)
+    Features:
+    - Unique dark-themed GUI with animated text colors.
+    - Simple GUI showing status and active time.
+    - Basic anti-AFK mechanism (simulates a jump).
+    - Designed to be compatible with mobile and executors like Codex.
+    - Aims for stability over long periods (e.g., 200 hours).
+]]
+
+-- Configuration
+local JUMP_INTERVAL_MIN = 180 -- Minimum seconds between jumps (3 minutes)
+local JUMP_INTERVAL_MAX = 300 -- Maximum seconds between jumps (5 minutes)
+local GUI_TITLE = "Anti-AFK System"
+local STATUS_ACTIVE_TEXT = "Status: Active"
+local STATUS_INACTIVE_TEXT = "Status: Inactive (Error?)"
+local TIME_ACTIVE_PREFIX = "Time Active: "
+local CREDIT_TEXT = "السكربت من صنع فارس يمعلم و اصمل براحتك يباشا و دي نسخه v2 مش مسروقه" 
+local TEXT_COLOR_CHANGE_INTERVAL = 0.75 -- Seconds between text color changes
+
+-- State Variables
+local isAntiAfkActive = true
+local startTime = tick()
+local elapsedTime = 0
+local lastJumpTime = 0
+local colorIndex = 1
+
+-- Dark Color Palette for Text Animation (Darker, more distinct)
+local animatedDarkColors = {
+    Color3.fromRGB(170, 0, 0),   -- Darker Red
+    Color3.fromRGB(0, 170, 0),   -- Darker Green
+    Color3.fromRGB(0, 0, 170),   -- Darker Blue
+    Color3.fromRGB(100, 0, 130), -- Darker Purple
+    Color3.fromRGB(0, 130, 130), -- Darker Cyan
+    Color3.fromRGB(180, 90, 0),  -- Darker Orange
+    Color3.fromRGB(128, 128, 128) -- Medium Grey (as a contrast)
+}
+
+-- GUI Elements
+local screenGui = Instance.new("ScreenGui")
+screenGui.Name = "AntiAFKSystemGUI_ByFares_V2"
+screenGui.ResetOnSpawn = false
+screenGui.DisplayOrder = 999
+
+local mainFrame = Instance.new("Frame")
+mainFrame.Name = "MainFrame"
+mainFrame.Parent = screenGui
+mainFrame.BackgroundColor3 = Color3.fromRGB(15, 15, 25) -- Very Dark Blue/Purple
+mainFrame.BorderColor3 = Color3.fromRGB(50, 50, 70)   -- Darker Border
+mainFrame.BorderSizePixel = 2
+mainFrame.Active = true
+mainFrame.Draggable = true
+mainFrame.Position = UDim2.new(0.5, -110, 0.1, 0) -- Centered, 10% from top
+mainFrame.Size = UDim2.new(0, 220, 0, 110)      -- Slightly larger for new style
+
+local titleLabel = Instance.new("TextLabel")
+titleLabel.Name = "TitleLabel"
+titleLabel.Parent = mainFrame
+titleLabel.BackgroundColor3 = Color3.fromRGB(25, 25, 45) -- Darker title background
+-- titleLabel.BackgroundTransparency = 0.3 -- Slight transparency
+titleLabel.Size = UDim2.new(1, 0, 0, 30)
+titleLabel.Position = UDim2.new(0, 0, 0, 0)
+titleLabel.Font = Enum.Font.SourceSansSemibold
+titleLabel.Text = GUI_TITLE
+titleLabel.TextColor3 = animatedDarkColors[1] -- Initial color
+titleLabel.TextScaled = false
+titleLabel.TextSize = 18
+titleLabel.TextXAlignment = Enum.TextXAlignment.Center
+
+local statusLabel = Instance.new("TextLabel")
+statusLabel.Name = "StatusLabel"
+statusLabel.Parent = mainFrame
+statusLabel.BackgroundTransparency = 1
+statusLabel.Size = UDim2.new(1, 0, 0, 25)
+statusLabel.Position = UDim2.new(0, 0, 0, 32)
+statusLabel.Font = Enum.Font.SourceSans
+statusLabel.Text = STATUS_ACTIVE_TEXT
+statusLabel.TextColor3 = animatedDarkColors[2] -- Initial color (different from title)
+statusLabel.TextScaled = false
+statusLabel.TextSize = 16
+statusLabel.TextXAlignment = Enum.TextXAlignment.Center
+
+local timeLabel = Instance.new("TextLabel")
+timeLabel.Name = "TimeLabel"
+timeLabel.Parent = mainFrame
+timeLabel.BackgroundTransparency = 1
+timeLabel.Size = UDim2.new(1, 0, 0, 25)
+timeLabel.Position = UDim2.new(0, 0, 0, 57)
+timeLabel.Font = Enum.Font.SourceSans
+timeLabel.Text = TIME_ACTIVE_PREFIX .. "00:00:00"
+timeLabel.TextColor3 = animatedDarkColors[3] -- Initial color
+timeLabel.TextScaled = false
+timeLabel.TextSize = 14
+timeLabel.TextXAlignment = Enum.TextXAlignment.Center
+
+local creditLabel = Instance.new("TextLabel")
+creditLabel.Name = "CreditLabel"
+creditLabel.Parent = mainFrame
+creditLabel.BackgroundTransparency = 1
+creditLabel.Size = UDim2.new(1, 0, 0, 20)
+creditLabel.Position = UDim2.new(0, 0, 0, 85)
+creditLabel.Font = Enum.Font.SourceSansItalic
+creditLabel.Text = CREDIT_TEXT
+creditLabel.TextColor3 = Color3.fromRGB(100, 100, 120) -- Static Dark Grey/Blueish
+creditLabel.TextScaled = false
+creditLabel.TextSize = 12
+creditLabel.TextXAlignment = Enum.TextXAlignment.Center
+
+-- Function to format time
+local function formatTime(seconds)
+    local h = math.floor(seconds / 3600)
+    local m = math.floor((seconds % 3600) / 60)
+    local s = math.floor(seconds % 60)
+    return string.format("%02d:%02d:%02d", h, m, s)
+end
+
+-- Anti-AFK Action
+local function performAntiAfkAction()
+    local player = game:GetService("Players").LocalPlayer
+    local character = player.Character
+    if character and character:FindFirstChild("Humanoid") then
+        local humanoid = character.Humanoid
+        if humanoid.Health > 0 and humanoid:GetState() ~= Enum.HumanoidStateType.Dead then
+            local currentState = humanoid:GetState()
+            if currentState ~= Enum.HumanoidStateType.Jumping and currentState ~= Enum.HumanoidStateType.Freefall then
+                humanoid.Jump = true
+            end
+        end
+    end
+end
+
+-- Function to animate text colors
+local function animateTextColors()
+    colorIndex = colorIndex + 1
+    if colorIndex > #animatedDarkColors then
+        colorIndex = 1
+    end
+    local nextColor = animatedDarkColors[colorIndex]
+    
+    -- Smooth transition (optional, can be demanding)
+    -- For simplicity, direct change is used here.
+    titleLabel.TextColor3 = nextColor
+    
+    -- Shift colors for other labels to make it more dynamic
+    local statusColorIndex = (colorIndex + 1 > #animatedDarkColors) and 1 or colorIndex + 1
+    statusLabel.TextColor3 = animatedDarkColors[statusColorIndex]
+    
+    local timeColorIndex = (colorIndex + 2 > #animatedDarkColors) and ((colorIndex + 2) - #animatedDarkColors) or colorIndex + 2
+    timeLabel.TextColor3 = animatedDarkColors[timeColorIndex]
+end
+
+-- Main loop
+local function mainLoop()
+    local lastColorChangeTime = tick()
+    while isAntiAfkActive and task.wait(0.1) do -- More frequent wait for smoother animation check
+        local currentTime = tick()
+        elapsedTime = currentTime - startTime
+        timeLabel.Text = TIME_ACTIVE_PREFIX .. formatTime(elapsedTime)
+
+        if currentTime - lastJumpTime >= math.random(JUMP_INTERVAL_MIN, JUMP_INTERVAL_MAX) then
+            performAntiAfkAction()
+            lastJumpTime = currentTime
+        end
+
+        if currentTime - lastColorChangeTime >= TEXT_COLOR_CHANGE_INTERVAL then
+            animateTextColors()
+            lastColorChangeTime = currentTime
+        end
+        
+        local player = game:GetService("Players").LocalPlayer
+        if not player or not player.Character or not player.Character:FindFirstChild("Humanoid") then
+            -- statusLabel.Text = STATUS_INACTIVE_TEXT 
+            -- statusLabel.TextColor3 = Color3.fromRGB(255,0,0)
+        else
+            if statusLabel.Text ~= STATUS_ACTIVE_TEXT then -- Only update if it changed to inactive
+                 statusLabel.Text = STATUS_ACTIVE_TEXT
+                 -- Color will be handled by animation
+            end
+        end
+    end
+end
+
+-- Start function
+local function start()
+    local playerGui = game:GetService("Players").LocalPlayer:WaitForChild("PlayerGui")
+    if playerGui then
+        screenGui.Parent = playerGui
+    else
+        warn("Anti-AFK V2: PlayerGui not found. GUI will not be visible.")
+        pcall(function()
+            screenGui.Parent = game:GetService("CoreGui")
+        end)
+    end
+
+    lastJumpTime = tick()
+    task.spawn(mainLoop)
+    print("Anti-AFK Script by Fares (V2 - Dark GUI) - Started")
+end
+
+-- Initial check
+if game:IsLoaded() then
+    local localPlayer = game:GetService("Players").LocalPlayer
+    if localPlayer then
+        start()
+    else
+        game:GetService("Players").PlayerAdded:Connect(function(player)
+            if player == game:GetService("Players").LocalPlayer then
+                start()
+            end
+        end)
+    end
+else
+    game.Loaded:Wait()
+    local localPlayer = game:GetService("Players").LocalPlayer
+    if localPlayer then
+        start()
+    else
+        game:GetService("Players").PlayerAdded:Connect(function(player)
+            if player == game:GetService("Players").LocalPlayer then
+                start()
+            end
+        end)
+    end
+end
+
