@@ -8,6 +8,7 @@
     - Basic anti-AFK mechanism (simulates a jump).
     - Designed to be compatible with mobile and executors like Codex.
     - Aims for stability over long periods (e.g., 200 hours).
+    - ANTIAFK (VIRTUAL USER) FOR AFK 100-200 hours
 ]]
 
 -- Configuration
@@ -115,6 +116,16 @@ local function formatTime(seconds)
     local s = math.floor(seconds % 60)
     return string.format("%02d:%02d:%02d", h, m, s)
 end
+
+
+-- Anti-AFK 200 hours
+
+local virtualUser = game:GetService("VirtualUser")
+
+game:GetService("Players").LocalPlayer.Idled:Connect(function()
+    virtualUser:CaptureController()
+    virtualUser:ClickButton2(Vector2.new())
+end)
 
 -- Anti-AFK Action
 local function performAntiAfkAction()
