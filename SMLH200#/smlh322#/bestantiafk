@@ -125,7 +125,7 @@ local virtualUser = game:GetService("VirtualUser")
 game:GetService("Players").LocalPlayer.Idled:Connect(function()
     virtualUser:CaptureController()
     virtualUser:ClickButton2(Vector2.new())
-print("AFK WORKING")
+print('AFK WORKING')
 end)
 
 -- Anti-AFK Action
